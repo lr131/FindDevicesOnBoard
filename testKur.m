@@ -1,5 +1,5 @@
 %% Считаем изображение. 
-RGB=imread('test_2.bmp');
+RGB=imread('speed.jpg');
 %imshow(RGB);
 %% Шаг 2: Пороговая обработка изображения.
 I=rgb2gray(RGB);
@@ -12,24 +12,24 @@ I2=imadjust(I2);
 %figure, imshow(I2);
 %Коррекция яркости
 %scaled = I2*1.8;
-%imshow(scaled);
+imshow(scaled);
 %%
 level=graythresh(I2);
 bw=im2bw(I2, level);
-%figure, imshow(bw); %!!! теряются маленькие приборы
+figure, imshow(bw); %!!! теряются маленькие приборы
 %% Шаг 3: Устранение шума.
 % удаление всех объектов, содержащих меньше чем 100 пикселей
 bw=bwareaopen(bw,30);
 % удаление граничных элементов
 bw=imclearborder(bw);
-%imshow(bw);
+imshow(bw);
 %% заполнение пустот
 se=strel('disk', 15);
 bw=imclose(bw, se);
 bw=imfill(bw,'holes');
 % удаление всех объектов, содержащих меньше чем 100 пикселей
 %bw=bwareaopen(bw,500);
-%imshow(bw);
+imshow(bw);
 %% Свойства
 [labeled,numObjects] = bwlabel(bw,8);
 stats = regionprops(labeled,'Eccentricity','Area','BoundingBox');
@@ -57,11 +57,11 @@ binary2 = bwareaopen(binary,3000);
 %% Удаление граничных элементов
 binary = binary2;
 binary = imclearborder(binary);
-figure; imshow(binary);
+%imshow(binary);
 %% Найдём границы объектов
 [B,L] = bwboundaries(binary,'noholes');
 numRegions = max(L(:));
-figure; imshow(label2rgb(L));
+%imshow(label2rgb(L));
  
 %% Статистика изображения
 stats = regionprops(L,'all');
