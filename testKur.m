@@ -1,23 +1,90 @@
-img = imread('test_2.bmp');
-grayimg = rgb2gray(img);
-grayimg = imadjust(grayimg);
-bw = edge(grayimg,'canny', 0.15, 2);
-bw = imfill(bw,'holes');
-se = strel('disk',1); 
-bw = imopen(bw,se);
-[B,L] = bwboundaries(bw);
-stats = regionprops(L,'Centroid','EquivDiameter');
-figure, imshow(img)
-hold on
-for k = 1:length(B)
- boundary = B{k};
- radius = stats(k).EquivDiameter/2;
- xc = stats(k).Centroid(1);
- yc = stats(k).Centroid(2);
- theta = 0:0.01:2*pi;
- Xfit = radius*cos(theta) + xc;
- Yfit = radius*sin(theta) + yc;
- plot(Xfit, Yfit, 'g');
- text(boundary(1,2)-15,boundary(1,1)+15, num2str(radius,3),'Color','y',...
-  'FontSize',8);
+%% Считаем изображение. 
+RGB=imread('test_2.bmp');
+%imshow(RGB);
+%% Шаг 2: Пороговая обработка изображения.
+I=rgb2gray(RGB);
+I=imadjust(I);
+I=imadjust(I);
+bg=imclose(I,strel('disk',15));
+I2=imsubtract(bg,I);
+I2=imadjust(I2);
+I2=imadjust(I2);
+%figure, imshow(I2);
+%Коррекция яркости
+%scaled = I2*1.8;
+%imshow(scaled);
+%%
+level=graythresh(I2);
+bw=im2bw(I2, level);
+%figure, imshow(bw); %!!! теряются маленькие приборы
+%% Шаг 3: Устранение шума.
+% удаление всех объектов, содержащих меньше чем 100 пикселей
+bw=bwareaopen(bw,30);
+% удаление граничных элементов
+bw=imclearborder(bw);
+%imshow(bw);
+%% заполнение пустот
+se=strel('disk', 15);
+bw=imclose(bw, se);
+bw=imfill(bw,'holes');
+% удаление всех объектов, содержащих меньше чем 100 пикселей
+%bw=bwareaopen(bw,500);
+%imshow(bw);
+%% Свойства
+[labeled,numObjects] = bwlabel(bw,8);
+stats = regionprops(labeled,'Eccentricity','Area','BoundingBox');
+areas = [stats.Area];
+eccentricities = [stats.Eccentricity];
+%% используем для нахождения объектов
+idxOfDefects = find(eccentricities < 0.6 & areas > 1500);
+statsDefects = stats(idxOfDefects);
+%% стрелка
+%% Перевод изображения из цвета в полутон
+panelimggray = rgb2gray(RGB);
+%% Коррекция яркости
+scaled = panelimggray * 1.3;
+%imshow(scaled);
+ 
+%% Выделение порога для создания бинарного изображения
+level = 100;
+binary = scaled < level;
+%imshow(binary);
+ 
+%% Фильтрация мелких элементов, состоящих из указанного количества пикселей и %меньше, с помощью морфологической операции открытия
+binary2 = bwareaopen(binary,3000);
+%imshow(binary2);
+ 
+%% Удаление граничных элементов
+binary = binary2;
+binary = imclearborder(binary);
+figure; imshow(binary);
+%% Найдём границы объектов
+[B,L] = bwboundaries(binary,'noholes');
+numRegions = max(L(:));
+figure; imshow(label2rgb(L));
+ 
+%% Статистика изображения
+stats = regionprops(L,'all');
+MajorAxisL = [stats.MajorAxisLength];
+MinorAxisL = [stats.MinorAxisLength];
+ 
+%% Найдём линии по определённым критериям
+%Ищем длинные тонкие объекты
+lanesIndex = find(MajorAxisL./MinorAxisL > 5);
+lines = B(lanesIndex);
+%% вывод на рисунок
+figure; imshow(RGB);
+hold on;
+for idx = 1 : length(statsDefects)
+        h = rectangle('Position',statsDefects(idx).BoundingBox,'LineWidth',2);
+        set(h,'EdgeColor',[.75 0 0]);
+        hold on;
 end
+for K = 1:length(lanesIndex)
+    plot(lines{K}(:,2),lines{K}(:,1),'g','LineWidth',2)
+    text(lines{K}(1, 2)-35, lines{K}(1, 1)+13,...
+         sprintf('%2.1f',-(stats(lanesIndex).Orientation + 180)/30+8),'Color', 'y',...
+         'FontSize', 14, 'FontWeight', 'bold');
+end
+
+hold off;
