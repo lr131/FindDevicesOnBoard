@@ -1,8 +1,8 @@
 
 %filename = 'src/test_1.bmp';
 %во входных параметрах укажите им€ файла
-function [count] = FindDevices(filename) 
-%t1 = clock;
+function [count]= FindDevices(filename) 
+t1 = clock;
 %filename = 'src/test_1.bmp';
 %% —читаем изображение. 
 RGB=imread(filename);
@@ -46,6 +46,6 @@ for idx = 1 : count
         hold on;
 end
 hold off;
-%t2 = clock;
-%e = etime(t2,t1);
+t2 = clock;
+e = etime(t2,t1);
 end
